@@ -5,11 +5,29 @@
 const uaParser = require('ua-parser-js');
 const fs = require('fs');
 const path = require('path');
+const url = require('url');
 
 exports.register = function(server, options, next) {
+  server.state('ftDeviceType', {
+    path: '/'
+  });
+
   server.ext('onPreResponse', (request, reply) => {
     if (request.response.variety !== 'view') {
       return reply.continue();
+    }
+
+    if (request.query.ftDeviceType === 'desktop') {
+      const query = request.url;
+
+      query.search = '';
+      delete query.query.ftDeviceType;
+
+      reply.state('ftDeviceType', 'desktop');
+
+      return reply.redirect(url.format(query))
+                  .temporary(true)
+                  .rewritable(false);
     }
 
     if (!request.response.source.context) {
@@ -17,11 +35,16 @@ exports.register = function(server, options, next) {
     }
 
     const context = request.response.source.context;
-    const userAgent = uaParser(request.headers['user-agent']);
+
+    if (request.state.ftDeviceType !== 'desktop') {
+      const userAgent = uaParser(request.headers['user-agent']);
+      context.__isMobile = (userAgent.device.type === 'mobile' || userAgent.ua.indexOf('IEMobile') !== -1);
+    } else {
+      context.__isMobile = false;
+    }
+
     const templatePath = request.response.source.compiled.settings.path;
     let template = request.response.source.template;
-
-    context.__isMobile = (userAgent.device.type === 'mobile' || userAgent.ua.indexOf('IEMobile') !== -1);
 
     if (context.__isMobile) {
       template = `${template}-mobile`;

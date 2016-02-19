@@ -171,15 +171,25 @@ lab.experiment('specs', () => {
     });
   });
 
-  lab.test.skip('override', done => {
+  lab.test('override', done => {
     server.inject({
       url: '/test?ftDeviceType=desktop',
       headers: {
         'user-agent': mobileUA[0]
       }
     }, response => {
-      Hoek.assert(response.result === 'Desktop: Message1\nisMobile: false\n', `Expected response: ${JSON.stringify(response.result)} to be ${JSON.stringify('Desktop: Message1\nisMobile: false\n')}`);
-      done();
+      Hoek.assert(response.headers.location === '/test', 'Redirect not set correctly');
+      Hoek.assert(response.headers['set-cookie'], 'Cookie not set');
+      server.inject({
+        url: '/test',
+        headers: {
+          'user-agent': mobileUA[0],
+          Cookie: 'ftDeviceType=desktop;'
+        }
+      }, res => {
+        Hoek.assert(res.result === 'Desktop: Message1\nisMobile: false\n', `Expected response: ${JSON.stringify(res.result)} to be ${JSON.stringify('Desktop: Message1\nisMobile: false\n')}`);
+        done();
+      });
     });
   });
 });
