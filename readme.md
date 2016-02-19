@@ -1,8 +1,7 @@
 # hapi-mobile-views
 
 [![Build Status](https://travis-ci.org/firstandthird/hapi-mobile-views.svg?branch=master)](https://travis-ci.org/firstandthird/hapi-mobile-views)
-[![Coverage Status](https://coveralls.io/repos/firstandthird/hapi-mobile-views/badge.svg?branch=master)](https://coveralls.io/r/firstandthird/hapi-mobile-views?branch=master)
-
+[![Coverage Status](https://coveralls.io/repos/github/firstandthird/hapi-mobile-views/badge.svg?branch=master)](https://coveralls.io/github/firstandthird/hapi-mobile-views?branch=master)
 Detects mobile user agents and serves mobile views when available. Also handles cooking client for overrides.
 
 ## Install
