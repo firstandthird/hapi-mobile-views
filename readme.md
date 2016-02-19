@@ -2,7 +2,8 @@
 
 [![Build Status](https://travis-ci.org/firstandthird/hapi-mobile-views.svg?branch=master)](https://travis-ci.org/firstandthird/hapi-mobile-views)
 [![Coverage Status](https://coveralls.io/repos/github/firstandthird/hapi-mobile-views/badge.svg?branch=master)](https://coveralls.io/github/firstandthird/hapi-mobile-views?branch=master)
-Detects mobile user agents and serves mobile views when available. Also handles cooking client for overrides.
+
+Detects mobile user agents and serves mobile views when available.
 
 ## Install
 
@@ -25,7 +26,7 @@ plugins:
 
 ## Serving mobile views
 
-**NOTE:**: Currently only `*.html` view files are supported and we're only testing against the `vision` module.
+**NOTE:** Currently only `*.html` view files are supported and we're only testing against the `vision` module.
 
 This plugin handles everything except creating the mobile views for you. In order to service up a mobile view you will need to create a file that matches a view but end with `-mobile` in the name.
 
