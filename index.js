@@ -43,6 +43,10 @@ exports.register = function(server, options, next) {
       context.__isMobile = false;
     }
 
+    if (!context.__isMobile) {
+      return reply.continue();
+    }
+
     const templatePath = request.response.source.compiled.settings.path;
     let template = request.response.source.template;
 
