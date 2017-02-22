@@ -17,7 +17,7 @@
   "devDependencies": {
     "async": "^2.1.4",
     "coveralls": "^2.11.6",
-    "eslint": "^3.12.2",
+    "eslint": "^3.16.1",
     "eslint-config-airbnb": "^13.0.0",
     "eslint-config-firstandthird": "^3.1.0",
     "handlebars": "^4.0.5",
