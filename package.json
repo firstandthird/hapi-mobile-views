@@ -4,8 +4,7 @@
   "description": "Loads mobile views",
   "main": "index.js",
   "scripts": {
-    "test": "lab -t 100 -a hoek -v",
-    "test-travis": "lab -r lcov | ./node_modules/.bin/coveralls"
+    "test": "tap test --coverage"
   },
   "keywords": [
     "hapi",
@@ -15,18 +14,15 @@
   "author": "First+Third",
   "license": "UNLICENSED",
   "devDependencies": {
-    "async": "^2.1.4",
-    "coveralls": "^2.11.6",
-    "eslint": "^3.12.2",
-    "eslint-config-airbnb": "^13.0.0",
-    "eslint-config-firstandthird": "^3.1.0",
-    "handlebars": "^4.0.5",
-    "hapi": "^16.0.2",
-    "hoek": "^4.1.0",
-    "lab": "^11.2.1",
-    "vision": "^4.0.1"
+    "eslint": "^5.6.0",
+    "eslint-config-firstandthird": "^4.3.0",
+    "eslint-plugin-import": "^2.14.0",
+    "handlebars": "^4.0.12",
+    "hapi": "^17.5.4",
+    "tap": "^12.0.1",
+    "vision": "^5.4.0"
   },
   "dependencies": {
-    "ua-parser-js": "^0.7.10"
+    "ua-parser-js": "^0.7.18"
   }
 }
