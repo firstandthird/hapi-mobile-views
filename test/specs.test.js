@@ -1,11 +1,6 @@
-/* eslint max-len: 0, no-console: 0 */
-'use strict';
-
-const Lab = require('lab');
-const lab = exports.lab = Lab.script();
-const Hoek = require('hoek');
-const async = require('async');
+const tap = require('tap');
 const ua = require('ua-parser-js');
+const Hapi = require('hapi');
 
 const mobileUA = [
   'Mozilla/5.0 (iPhone; CPU iPhone OS 8_0 like Mac OS X) AppleWebKit/600.1.4 (KHTML, like Gecko) Version/8.0 Mobile/12A366 Safari/600.1.4',
@@ -20,176 +15,150 @@ const desktopUA = [
   'Mozilla/5.0 (iPad; CPU OS 6_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A5355d Safari/8536.25'
 ];
 
-// test server
-const Hapi = require('hapi');
-const server = new Hapi.Server();
 
-server.connection();
+let server;
 
-lab.experiment('specs', () => {
-  lab.before(start => {
-    // start server
-    server.register([require('vision'), require('../')], error => {
-      Hoek.assert(!error, error);
-
-      server.views({
-        engines: { html: require('handlebars') },
-        path: `${__dirname}/views`
-      });
-
-      server.route({
-        method: 'GET',
-        path: '/api',
-        handler(request, reply) {
-          reply({ test: true });
-        }
-      });
-
-      server.route({
-        method: 'GET',
-        path: '/test',
-        handler(request, reply) {
-          reply.view('test', {
-            message: 'Message1'
-          }).header('X-Test', 'test');
-        }
-      });
-
-      server.route({
-        method: 'GET',
-        path: '/empty',
-        handler(request, reply) {
-          reply.view('empty').code(204);
-        }
-      });
-
-      server.route({
-        method: 'GET',
-        path: '/desktop',
-        handler(request, reply) {
-          reply.view('desktop', {
-            message: 'Message1'
-          });
-        }
-      });
-
-      server.start((err) => {
-        Hoek.assert(!err, err);
-        console.log(`Server started at: ${server.info.uri}`);
-        start();
-      });
-    });
+tap.beforeEach(async () => {
+  server = new Hapi.Server();
+  await server.register([require('vision'), require('../')]);
+  server.views({
+    engines: { html: require('handlebars') },
+    path: `${__dirname}/views`
   });
-
-  // tests
-  lab.test('non view', done => {
-    server.inject({
-      url: '/api'
-    }, response => {
-      Hoek.assert(response.result.test === true, 'Well something is really wrong...');
-      done();
-    });
+  server.route({
+    method: 'GET',
+    path: '/api',
+    handler(request, h) {
+      return { test: true };
+    }
   });
-
-  lab.test('desktop', done => {
-    async.each(desktopUA, (agent, cb) => {
-      server.inject({
-        url: '/test',
-        headers: {
-          'user-agent': agent
-        }
-      }, response => {
-        Hoek.assert(response.result === 'Desktop: Message1\nisMobile: false\n', `UserAgent: ${ua(agent).os.name} - Expected response: ${JSON.stringify(response.result)} to be ${JSON.stringify('Desktop: Message1\nisMobile: false\n')}`);
-        cb();
+  server.route({
+    method: 'GET',
+    path: '/test',
+    handler(request, h) {
+      return h.view('test', {
+        message: 'Message1'
+      }).header('X-Test', 'test');
+    }
+  });
+  server.route({
+    method: 'GET',
+    path: '/empty',
+    handler(request, h) {
+      return h.view('empty').code(204);
+    }
+  });
+  server.route({
+    method: 'GET',
+    path: '/desktop',
+    handler(request, h) {
+      return h.view('desktop', {
+        message: 'Message1'
       });
-    }, () => {
-      done();
-    });
+    }
   });
+  await server.start();
+  console.log(`Server started at: ${server.info.uri}`);
+});
 
-  lab.test('mobile', done => {
-    async.each(mobileUA, (agent, cb) => {
-      server.inject({
-        url: '/test',
-        headers: {
-          'user-agent': agent
-        }
-      }, response => {
-        Hoek.assert(response.result === 'Mobile: Message1\nisMobile: true\n', `UserAgent: ${ua(agent).os.name} - Expected response: ${JSON.stringify(response.result)} to be ${JSON.stringify('Mobile: Message1\nisMobile: true\n')}`);
-        cb();
-      });
-    }, () => {
-      done();
-    });
+tap.afterEach(async () => {
+  await server.stop();
+});
+
+tap.test('non view', async t => {
+  const response = await server.inject({
+    url: '/api'
   });
+  t.ok(response.result.test, 'basic test works');
+  t.end();
+});
 
-  lab.test('mobile on desktop only view', done => {
-    server.inject({
-      url: '/desktop',
-      headers: {
-        'user-agent': mobileUA[0]
-      }
-    }, response => {
-      Hoek.assert(response.result === 'Desktop Only\n', `Expected response: ${JSON.stringify(response.result)} to be ${JSON.stringify('Desktop Only\n')}`);
-      done();
-    });
-  });
-
-  lab.test('vary header set', done => {
-    server.inject({
+tap.test('desktop', (t) => {
+  t.plan(desktopUA.length);
+  desktopUA.forEach(async agent => {
+    const response = await server.inject({
       url: '/test',
       headers: {
-        'user-agent': mobileUA[0]
+        'user-agent': agent
       }
-    }, response => {
-      Hoek.assert(response.headers.vary === 'User-Agent', 'Vary header not set correctly');
-      done();
     });
+    t.match(response.result, 'Desktop: Message1\nisMobile: false\n');
   });
+});
 
-  lab.test('headers passed through', done => {
-    server.inject({
+tap.test('mobile', t => {
+  t.plan(mobileUA.length);
+  mobileUA.forEach(async agent => {
+    const response = await server.inject({
       url: '/test',
       headers: {
-        'user-agent': mobileUA[0]
+        'user-agent': agent
       }
-    }, response => {
-      Hoek.assert(response.headers['x-test'] === 'test', 'Headers not maintained');
-      done();
     });
+    t.match(response.result, 'Mobile: Message1\nisMobile: true\n');
   });
+});
 
-  lab.test('statusCode passed through', done => {
-    server.inject({
-      url: '/empty',
-      headers: {
-        'user-agent': mobileUA[0]
-      }
-    }, response => {
-      Hoek.assert(response.statusCode === 204, 'Status Code not maintained');
-      done();
-    });
+tap.test('mobile on desktop only view', async t => {
+  const response = await server.inject({
+    url: '/desktop',
+    headers: {
+      'user-agent': mobileUA[0]
+    }
   });
+  t.equal(response.result, 'Desktop Only\n');
+  t.end();
+});
 
-  lab.test('override', done => {
-    server.inject({
-      url: '/test?ftDeviceType=desktop',
-      headers: {
-        'user-agent': mobileUA[0]
-      }
-    }, response => {
-      Hoek.assert(response.headers.location === '/test', 'Redirect not set correctly');
-      Hoek.assert(response.headers['set-cookie'], 'Cookie not set');
-      server.inject({
-        url: '/test',
-        headers: {
-          'user-agent': mobileUA[0],
-          Cookie: 'ftDeviceType=desktop;'
-        }
-      }, res => {
-        Hoek.assert(res.result === 'Desktop: Message1\nisMobile: false\n', `Expected response: ${JSON.stringify(res.result)} to be ${JSON.stringify('Desktop: Message1\nisMobile: false\n')}`);
-        done();
-      });
-    });
+tap.test('vary header set', async t => {
+  const response = await server.inject({
+    url: '/test',
+    headers: {
+      'user-agent': mobileUA[0]
+    }
   });
+  t.equal(response.headers.vary, 'User-Agent', 'Vary header set correctly');
+  t.end();
+});
+
+tap.test('headers passed through', async t => {
+  const response = await server.inject({
+    url: '/test',
+    headers: {
+      'user-agent': mobileUA[0]
+    }
+  });
+  t.equal(response.headers['x-test'], 'test', 'Headers maintained');
+  t.end();
+});
+
+tap.test('statusCode passed through', async t => {
+  const response = await server.inject({
+    url: '/empty',
+    headers: {
+      'user-agent': mobileUA[0]
+    }
+  });
+  t.equal(response.statusCode, 204, 'Status Code maintained');
+  t.end();
+});
+
+tap.test('override', async t => {
+  const response = await server.inject({
+    url: '/test?ftDeviceType=desktop',
+    headers: {
+      'user-agent': mobileUA[0]
+    }
+  });
+  t.equal(response.headers.location, '/test', 'Redirect set correctly');
+  t.ok(response.headers['set-cookie'], 'Cookie set');
+  const response2 = await server.inject({
+    url: '/test',
+    headers: {
+      'user-agent': mobileUA[0],
+      Cookie: 'ftDeviceType=desktop;'
+    }
+  });
+  t.equal(response2.result, 'Desktop: Message1\nisMobile: false\n');
+  t.end();
 });
